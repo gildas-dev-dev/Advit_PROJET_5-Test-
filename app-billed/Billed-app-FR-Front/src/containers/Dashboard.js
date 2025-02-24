@@ -36,7 +36,6 @@ export const card = (bill) => {
     : firstAndLastNames;
 
   return `
-  // cette ligne est à tester
     <div class='bill-card' id='open-bill${bill.id}' data-testid='open-bill${
     bill.id
   }'>

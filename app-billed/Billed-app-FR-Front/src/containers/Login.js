@@ -119,10 +119,13 @@ export default class Login {
           console.log(`User with ${user.email} is created`);
           return this.login(user);
         });
-    } else {
+    }
+     else
+    {
       return null;
     }
   };
+
 }
 
 

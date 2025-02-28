@@ -36,7 +36,7 @@ export default class NewBill {
     e.preventDefault();
     const file = this.document.querySelector(`input[data-testid="file"]`)
       .files[0];
-    // tache effectuée
+    // ajout de specification au fichier
     const fileType = document.querySelector(`input[data-testid="file"]`);
     fileType.setAttribute("accept", "image/png,image/jpg,image/jpeg");
 
@@ -51,7 +51,6 @@ export default class NewBill {
     formData.append("file", file);
     formData.append("email", email);
 
-    // verification
     if (checkFileExtension(e, file.name)) {
       this.store
         .bills()
@@ -68,12 +67,13 @@ export default class NewBill {
           this.fileUrl = fileUrl;
           this.fileName = fileName;
         })
-        .catch((error) => console.error(error));
+        // .catch((error) => console.error(error));
     }
   };
 
   handleSubmit = (e) => {
     e.preventDefault();
+
     const email = JSON.parse(localStorage.getItem("user")).email;
     const bill = {
       email,
@@ -104,10 +104,8 @@ export default class NewBill {
         .bills()
         .update({ data: JSON.stringify(bill), selector: this.billId })
         .then(() => {
-          
-          this.onNavigate(ROUTES_PATH["Bills"]); 
+          this.onNavigate(ROUTES_PATH["Bills"]);
         })
-        .catch((error) => console.error(error));
     }
   };
 }

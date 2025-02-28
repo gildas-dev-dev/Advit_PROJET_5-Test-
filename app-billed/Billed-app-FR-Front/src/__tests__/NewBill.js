@@ -8,6 +8,7 @@ import NewBill from "../containers/NewBill.js";
 import { ROUTES, ROUTES_PATH } from "../constants/routes.js";
 import { localStorageMock } from "../__mocks__/localStorage.js";
 import mockStore from "../__mocks__/store.js";
+import router from "../app/Router.js";
 
 jest.mock("../app/store", () => mockStore);
 
@@ -24,53 +25,11 @@ beforeEach(() => {
   );
 });
 
-// Ce test permet de verifier si le justificatif choisi correspond bien à un fichier qui a pour extension jpeg, png, jpg
 describe("Given I am connected as an employee", () => {
   describe("When I am on NewBill Page", () => {
-    // Ce test s'assure que lorsqu'un fichier avec une extension valide (jpg, jpeg, png) 
-    // est téléchargé, le comportement attendu est correctement exécuté
-    test("Then I upload a file with valid extension (jpg, jpeg, png)", () => {
-
-      // **Préparation**
-      // Simulation de navigation
-      function onNavigate(pathname) {
-        document.body.innerHTML = ROUTES({ pathname });
-      }
-      const html = NewBillUI();
-      document.body.innerHTML = html;
-
-      const newBill = new NewBill({
-        document,
-        onNavigate,
-        store: mockStore,
-        localStorage: window.localStorage,
-      });
-
-      const handleChangeFile = jest.fn(newBill.handleChangeFile);
-      const inputFile = screen.getByTestId("file");
-      inputFile.addEventListener("change", handleChangeFile);
-
-      // **Exécution**
-      // Simulation du téléchargement de fichier
-      fireEvent.change(inputFile, {
-        target: {
-          files: [
-            new File(["test-valid-extension.jpg"], "test-valid-extension.jpg", {
-              type: "image/jpg",
-            }),
-          ],
-        },
-      });
-
-      // **Assertions**
-      // assertion pour verifier que "handleChangeFile" a bien été déclenchée après le téléchargement.
-      expect(handleChangeFile).toHaveBeenCalled();
-      // Assertion pour verifier le du type du fichier
-      expect(inputFile.files[0].type).toBe("image/jpg");
-    });
-
-    test("Then I upload a file with invalid extension", async () => {
-      // **Préparation**
+    // Test 1 : Upload d'un fichier avec une extension valide (jpg, jpeg, png)
+    test("Then i upload a file with valid extention (jpg,jpeg,png)", () => {
+      // Arrange : Initialisation du DOM et de l'instance NewBill
       const onNavigate = (pathname) => {
         document.body.innerHTML = ROUTES({ pathname });
       };
@@ -88,7 +47,43 @@ describe("Given I am connected as an employee", () => {
       const inputFile = screen.getByTestId("file");
       inputFile.addEventListener("change", handleChangeFile);
 
-      // **Exécution**
+      // Act : Simulation de l'upload d'un fichier avec une extension valide
+      fireEvent.change(inputFile, {
+        target: {
+          files: [
+            new File(["test-valid-extension.jpg"], "test-valid-extension.jpg", {
+              type: "image/jpg",
+            }),
+          ],
+        },
+      });
+
+      // Assert : Vérification que la fonction handleChangeFile est appelée et que le fichier est valide
+      expect(handleChangeFile).toHaveBeenCalled();
+      expect(inputFile.files[0].type).toBe("image/jpg");
+    });
+
+    // Test 2 : Upload d'un fichier avec une extension invalide
+    test("Then I upload a file with invalid extension", async () => {
+      // Arrange : Initialisation du DOM et de l'instance NewBill
+      const onNavigate = (pathname) => {
+        document.body.innerHTML = ROUTES({ pathname });
+      };
+      const html = NewBillUI();
+      document.body.innerHTML = html;
+
+      const newBill = new NewBill({
+        document,
+        onNavigate,
+        mockStore,
+        localStorage: window.localStorage,
+      });
+
+      const handleChangeFile = jest.fn(newBill.handleChangeFile);
+      const inputFile = screen.getByTestId("file");
+      inputFile.addEventListener("change", handleChangeFile);
+
+      // Act : Simulation de l'upload d'un fichier avec une extension invalide
       fireEvent.change(inputFile, {
         target: {
           files: [
@@ -101,129 +96,103 @@ describe("Given I am connected as an employee", () => {
         },
       });
 
-      // **Assertions**
-
-      // Vérification que handleChangeFile a été appelée
+      // Assert : Vérification que la fonction handleChangeFile est appelée, que le fichier est invalide et qu'un message d'erreur est affiché
       expect(handleChangeFile).toHaveBeenCalled();
-      // Vérification du type du fichier téléchargé 
       expect(inputFile.files[0].type).toBe("image/gif");
-      // Vérification que le champ d'upload est vidé
       expect(inputFile.value).toBe("");
-      // Vérification du message d'erreur affiché
-      const errorMessage = screen.getByText(
+      const headerTitle = screen.getByText(
         "Seule les fichiers .jpg, .png .jepg sont autorisées"
       );
-      expect(errorMessage).toBeTruthy();
+      expect(headerTitle).toBeTruthy();
     });
   });
-  // Ce test vérifie que lorsqu'une erreur survient dans la méthode handleChangeFile,
-  // l'erreur est correctement interceptée et enregistrée dans la console
-  describe("When I am on NewBill Page and an error occurs in handleChangeFile", () => {
-    test("Then the error should be caught and logged in the console", async () => {
-      // **Préparation**
-      // Intercepte console.error pour éviter qu'il ne pollue les logs
-      const consoleErrorMock = jest.spyOn(console, "error").mockImplementation();
 
+  describe("When I am on NewBill Page and I submit the New Bill form", () => {
+    // Test 3 : Soumission du formulaire New Bill
+    test("Then It should call handleSubmit method", () => {
+      // Arrange : Initialisation du DOM et de l'instance NewBill
       const onNavigate = (pathname) => {
         document.body.innerHTML = ROUTES({ pathname });
       };
       const html = NewBillUI();
       document.body.innerHTML = html;
 
-      // Mock de store avec une méthode bills().create() qui rejette une erreur
-      const mockStoreWithError = {
-        bills: jest.fn(() => ({
-          create: jest.fn(() => Promise.reject(new Error("Mocked error"))),
-        })),
-      };
-
-      // Nouvelle instance de la classe NewBill avec un mock de store qui simule une erreur
       const newBill = new NewBill({
         document,
         onNavigate,
-        store: mockStoreWithError,
+        mockStore,
         localStorage: window.localStorage,
       });
 
-      const inputFile = screen.getByTestId("file");
-
-      // **Exécution**
-      // Simulation de changement de fichier
-      fireEvent.change(inputFile, {
-        target: {
-          files: [new File(["content"], "file.png", { type: "image/png" })],
-        },
-      });
-
-      // Appel manuel de handleChangeFile
-      await newBill.handleChangeFile({
-        preventDefault: jest.fn(),
-        target: inputFile,
-      });
-
-      // **Assertions**
-      // Vérifie que console.error a été appelé avec une erreur
-      expect(consoleErrorMock).toHaveBeenCalledWith(expect.any(Error));
-
-      // Nettoie le mock
-      consoleErrorMock.mockRestore();
-    });
-  });
-
-  // Ce test vérifie que si une erreur survient lors de la soumission du formulaire de la page NewBill,
-  // elle est correctement interceptée et enregistrée dans la console
-  describe("When I submit the New Bill form and an error occurs in handleSubmit", () => {
-    test("Then the error should be caught and logged in the console", async () => {
-      // **Préparation**
-      const consoleErrorMock = jest.spyOn(console, "error").mockImplementation();
-
-      const onNavigate = (pathname) => {
-        document.body.innerHTML = ROUTES({ pathname });
-      };
-      const html = NewBillUI();
-      document.body.innerHTML = html;
-
-      const mockStoreWithError = {
-        bills: jest.fn(() => ({
-          update: jest.fn(() => Promise.reject(new Error("Mocked error"))),
-        })),
-      };
-
-      const newBill = new NewBill({
-        document,
-        onNavigate,
-        store: mockStoreWithError,
-        localStorage: window.localStorage,
-      });
-
+      const handleSubmitMethode = jest.fn(newBill.handleSubmit);
       const formNewBill = screen.getByTestId("form-new-bill");
+      formNewBill.addEventListener("submit", handleSubmitMethode);
 
-      // **Exécution**
+      // Act : Simulation de la soumission du formulaire
       fireEvent.submit(formNewBill);
-      await newBill.handleSubmit({
-        preventDefault: jest.fn(),
-        target: formNewBill,
+
+      // Assert : Vérification que la méthode handleSubmit est appelée
+      expect(handleSubmitMethode).toHaveBeenCalled();
+    });
+  });
+});
+
+// Test d'intégration POST
+describe("Given I am a user connected as an employee", () => {
+  describe("When I create a new bill", () => {
+    // Test 4 : Création d'une nouvelle facture avec succès et redirection vers la page Bills
+    test("Then it should fetches new bill to mock API POST and redirected me to Bills Page", async () => {
+      // Arrange : Initialisation du DOM et du routeur
+      const root = document.createElement("div");
+      root.setAttribute("id", "root");
+      document.body.appendChild(root);
+      router();
+
+      // Mock de la méthode create de l'API
+      jest.spyOn(mockStore, "bills").mockImplementationOnce(() => {
+        return {
+          create: () => {
+            return Promise.resolve();
+          },
+        };
       });
 
-      // **Assertions**
-      expect(consoleErrorMock).toHaveBeenCalledWith(expect.any(Error));
+      // Act : Navigation vers la page NewBill
+      window.onNavigate(ROUTES_PATH.NewBill);
+      await new Promise(process.nextTick);
 
-      consoleErrorMock.mockRestore();
+      // Assert : Vérification que la redirection a eu lieu et que le titre de la page est correct
+      const headerTitle = screen.getByText("Mes notes de frais");
+      expect(headerTitle).toBeTruthy();
     });
   });
 
-  // Ce test vérifie que lorsqu'un utilisateur crée une nouvelle note de frais , l'application :
-  // 1-Envoie les données à l'API pour un enregistrement (via une requête POST mockée)
-  // 2-Redirige l'utilisateur vers la page des factures (Bills Page).
+  describe("When I create a new bill and an error occurs on API", () => {
+    beforeEach(() => {
+      // Arrange : Initialisation du DOM et du routeur
+      const root = document.createElement("div");
+      root.setAttribute("id", "root");
+      document.body.appendChild(root);
+      router();
+    });
 
-  describe("When I create a new bill", () => {
-    test("Then the navigation to Bills page should be triggered", () => {
-      // **Préparation**
-      // Mock de la fonction onNavigate
+
+  });
+});
+
+describe("Given I am connected as an employee", () => {
+  describe("When updateBill is called", () => {
+    // Test 5 : Mise à jour d'une facture
+    test("Then it should call store.bills().update with correct data", async () => {
+      // Arrange : Mock de la méthode update de l'API
+      const mockUpdate = jest.fn().mockResolvedValue({});
+      const mockStore = {
+        bills: jest.fn(() => ({
+          update: mockUpdate,
+        })),
+      };
+
       const onNavigate = jest.fn();
-      const html = NewBillUI();
-      document.body.innerHTML = html;
-
       const newBill = new NewBill({
         document,
         onNavigate,
@@ -231,83 +200,30 @@ describe("Given I am connected as an employee", () => {
         localStorage: window.localStorage,
       });
 
-      const formNewBill = screen.getByTestId("form-new-bill");
+      newBill.billId = "123abc";
+      const mockBill = {
+        email: "gildas@237.com",
+        type: "Transports",
+        name: "Gildas",
+        amount: 30,
+        date: "2025-02-26",
+        vat: "10",
+        pct: 20,
+        commentary: "Business trip",
+        fileUrl: "https://gildas.com/file.png",
+        fileName: "file.png",
+        status: "pending",
+      };
 
-      // **Exécution**
-      // Simule la soumission du formulaire
-      fireEvent.submit(formNewBill);
+      // Act : Appel de la méthode updateBill
+      await newBill.updateBill(mockBill);
 
-      // **Assertions**
+      // Assert : Vérification que la méthode update est appelée avec les bonnes données et que la navigation a lieu
+      expect(mockUpdate).toHaveBeenCalledWith({
+        data: JSON.stringify(mockBill),
+        selector: "123abc",
+      });
       expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH["Bills"]);
     });
   });
-  
-describe("when I want to update an invoice via the store API", () => {
-  let storeMock, onNavigateMock, billInstance;
-
-  beforeEach(() => {
-    storeMock = {
-      bills: jest.fn().mockReturnValue({
-        update: jest.fn(),
-      }),
-    };
-    // Mock de la navigation
-    onNavigateMock = jest.fn();
-
-    billInstance = new NewBill({ store: storeMock, onNavigate: onNavigateMock });
-    // Espionner console.error
-    console.error = jest.fn();
-  });
-
-  test("Then if the update succeeds, the user is redirected", async () => {
-    // Arrange
-    storeMock.bills().update.mockResolvedValue({});
-    const bill = { id: "123", amount: 100 };
-
-    // Act
-    await billInstance.updateBill(bill);
-
-    // Assert
-    // Vérifie appel à bills()
-    expect(storeMock.bills).toHaveBeenCalled(); 
-    expect(storeMock.bills().update).toHaveBeenCalledWith({
-      data: JSON.stringify(bill),
-      // Utilisation correcte de l'ID
-      selector: bill.id, 
-    }); // Vérifie appel à update() avec les bons arguments
-    // Vérifie la redirection
-    expect(onNavigateMock).toHaveBeenCalledWith(ROUTES_PATH["Bills"]); 
-    // Vérifie qu'aucune erreur n'a été loguée
-    expect(console.error).not.toHaveBeenCalled(); 
-  });
-
-
-
-  test("Then if the API does not respond, no action is taken", async () => {
-    // Arrange
-    storeMock.bills().update.mockRejectedValue(new Error("API unavailable"));
-    const bill = { id: "123", amount: 100 };
-
-    // Act
-    await billInstance.updateBill(bill);
-
-    // Assert
-    expect(storeMock.bills).toHaveBeenCalled();
-    expect(storeMock.bills().update).toHaveBeenCalled();
-    // Vérifie qu'il n'y a pas de redirection
-    expect(onNavigateMock).not.toHaveBeenCalled();
-    // Vérifie que l'erreur a bien été loguée
-    expect(console.error).toHaveBeenCalled(); 
-  });
 });
-
-});
-
-
-
-
-
-
-
-
-

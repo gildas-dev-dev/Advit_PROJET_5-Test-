@@ -57,7 +57,8 @@ export const card = (bill) => {
 
 export const cards = (bills) => {
   return bills && bills.length ? bills.map((bill) => card(bill)).join("") : "";
-};  // cette ligne est à tester
+};
+
 export const getStatus = (index) => {
   switch (index) {
     case 1:

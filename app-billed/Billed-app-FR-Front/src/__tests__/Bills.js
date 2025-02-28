@@ -12,8 +12,7 @@ import { localStorageMock } from "../__mocks__/localStorage.js";
 import mockStore from "../__mocks__/store.js";
 import router from "../app/Router.js";
 
- // Ce code teste si les données sont correctement récupérées depuis une API simulée et si l'interface
-// utilisateur réagit comme attendu
+
 jest.mock("../app/store", () => mockStore);
 
 beforeEach(() => {
@@ -31,8 +30,9 @@ beforeEach(() => {
 
 describe("Given I am connected as an employee", () => {
   describe("When I am on Bills Page", () => {
-    test("fetches bills from mock API GET", async () => {
-       // Arrange (préparation)
+    // Test 1 : Récupération des factures depuis l'API
+    test("Then, fetches bills from mock API GET", async () => {
+      // Arrange (préparation)
       localStorage.setItem(
         "user",
         JSON.stringify({ type: "employee", email: "a@a" })
@@ -42,20 +42,20 @@ describe("Given I am connected as an employee", () => {
       document.body.append(root);
       router();
       window.onNavigate(ROUTES_PATH.Dashboard);
-      // act (Action)
+
+      // Act (Action)
       await waitFor(() => screen.getByText("Validations"));
       const statutValide = await screen.getByText("En attente (1)");
       const statutRefuse = await screen.getByText("Refusé (2)");
-       //Assert (Vérification)
+
+      // Assert (Vérification)
       expect(statutValide).toBeTruthy();
       expect(statutRefuse).toBeTruthy();
       expect(screen.getByTestId("big-billed-icon")).toBeTruthy();
     });
 
-    // Ce test vérifie que l'icône "Notes de frais" dans le menu latéral est bien mise en 
-    // surbrillance lorsque l'utilisateur est sur la page des notes de frais.
-
-    test("Then bill icon in vertical layout should be highlighted", async () => {
+    // Test 2 : Vérification de la mise en surbrillance de l'icône "Notes de frais"
+    test("Then, bill icon in vertical layout should be highlighted", async () => {
       // Arrange (préparation)
       Object.defineProperty(window, "localStorage", {
         value: localStorageMock,
@@ -71,22 +71,21 @@ describe("Given I am connected as an employee", () => {
       document.body.append(root);
       router();
       window.onNavigate(ROUTES_PATH.Bills);
-      //act (Action)
+
+      // Act (Action)
       await waitFor(() => screen.getByTestId("icon-window"));
       const windowIcon = screen.getByTestId("icon-window");
-      
-      
-      //Code complété
-      // act (Action)
+
+      // Assert (Vérification)
       expect(windowIcon.classList.contains("active-icon")).toBe(true);
     });
 
-    // Ce test vérifie que les notes de frais sont triées de la plus ancienne à la plus récente.
-    test("Then bills should be ordered from earliest to latest", () => {
-      // Arrange(préparation)
+    // Test 3 : Vérification du tri des factures du plus ancien au plus récent
+    test("Then, bills should be ordered from earliest to latest", () => {
+      // Arrange (préparation)
       document.body.innerHTML = BillsUI({ data: bills });
-    
-      // Act(action)
+
+      // Act (Action)
       const dates = screen
         .getAllByText(
           /^(19|20)\d\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$/i
@@ -94,25 +93,21 @@ describe("Given I am connected as an employee", () => {
         .map((a) => a.innerHTML);
       const antiChrono = (a, b) => (a > b ? 1 : -1);
       const datesSorted = [...dates].sort(antiChrono);
-    
-      // Assert (vérification)
+
+      // Assert (Vérification)
       expect(dates).toEqual(datesSorted);
     });
   });
 });
 
-// Ce test vérifie que la modale s'ouvre correctement lorsqu'on
-//clique sur l'icône "voir" d'une note de frais.
+// Test 4 : Ouverture de la modale lors du clic sur l'icône "voir"
 describe("When I am on Bills Page and I click on icon eye", () => {
-  test("Then a modal should open", () => {
+  test("Then, a modal should open", () => {
     // Arrange (préparation)
-    //Cette fonction permet de simuler une navigation vers une autre route en modifiant le contenu du document.body
     function onNavigate(pathname) {
       document.body.innerHTML = ROUTES({ pathname });
     }
-    //génération du DOM de la page...
     document.body.innerHTML = BillsUI({ data: bills });
-    // Création d'une nouvelle instance
     const toutesLesFactures = new Bills({
       document,
       onNavigate,
@@ -121,9 +116,9 @@ describe("When I am on Bills Page and I click on icon eye", () => {
       localStorage: window.localStorage,
     });
 
-    $.fn.modal = jest.fn(); 
+    $.fn.modal = jest.fn();
 
-    // Act (action)
+    // Act (Action)
     const pemiereIcone = screen.getAllByTestId("icon-eye")[0];
     const handleClickIconEye = jest.fn(() =>
       toutesLesFactures.handleClickIconEye(pemiereIcone)
@@ -131,19 +126,16 @@ describe("When I am on Bills Page and I click on icon eye", () => {
     pemiereIcone.addEventListener("click", handleClickIconEye);
     userEvent.click(pemiereIcone);
 
-    // Assert (vérification)
+    // Assert (Vérification)
     expect(handleClickIconEye).toHaveBeenCalled();
-
     const modal = screen.getByTestId("modaleFile");
     expect(modal).toBeTruthy();
   });
 });
 
-// Ce test vérifie que l'utilisateur est redirigé vers le formulaire
-// de création d'une nouvelle note de frais lorsqu'il clique sur le bouton 
-// "Nouvelle note de frais".
+// Test 5 : Redirection vers le formulaire de création d'une nouvelle note de frais
 describe("When I am on Bills Page and I click on the new bill button", () => {
-  test("Then I should be sent on the new bill page form", () => {
+  test("Then, I should be sent on the new bill page form", () => {
     // Arrange (préparation)
     const onNavigate = (pathname) => {
       document.body.innerHTML = ROUTES({ pathname });
@@ -166,21 +158,17 @@ describe("When I am on Bills Page and I click on the new bill button", () => {
     userEvent.click(nouveauBoutonFacture);
 
     // Assert (Vérification)
-    // On verifie que la méthode de gestion du clic est bien appelée
     expect(handleClickNewBill).toHaveBeenCalled();
     const formNewBill = screen.getByTestId("form-new-bill");
-    // on verifie que le formulaire est affiché
     expect(formNewBill).toBeTruthy();
   });
 });
 
-// Ce test est un test d'intégration qui vérifie que les données des notes de 
-// frais sont bien récupérées depuis l'API
-
-// test d'intégration GET
+// Test d'intégration GET
 describe("Given I am a user connected as Employee", () => {
   describe("When I navigate to Bills Page", () => {
-    test("Then fetches bills from mock API GET", async () => {
+    // Test 6 : Récupération des factures depuis l'API
+    test("Then, fetches bills from mock API GET", async () => {
       // Arrange (préparation)
       const methodeSpy = jest.spyOn(mockStore, "bills");
 
@@ -207,12 +195,90 @@ describe("Given I am a user connected as Employee", () => {
 
   describe("When I navigate to Bills Page and an error occurs on API", () => {
     beforeEach(() => {
+      // Arrange (préparation)
       jest.spyOn(mockStore, "bills");
       const root = document.createElement("div");
       root.setAttribute("id", "root");
       document.body.appendChild(root);
       router();
-      expect(screen.getByText())
+    });
+
+    // Test 7 : Erreur lors de la récupération des factures depuis l'API
+    test("Then, an error message should be displayed", async () => {
+      // Arrange (préparation)
+      mockStore.bills.mockImplementationOnce(() => {
+        return {
+          list: () => {
+            return Promise.reject(new Error("Erreur 404"));
+          },
+        };
+      });
+
+      // Act (Action)
+      window.onNavigate(ROUTES_PATH.Bills);
+
+      // Assert (Vérification)
+      await waitFor(() => screen.getByText(/Erreur 404/));
+      const errorMessage = screen.getByText(/Erreur 404/);
+      expect(errorMessage).toBeTruthy();
     });
   });
+});
+
+
+
+jest.mock("../app/format", () => ({
+  formatDate: jest.fn((date) => {
+    if (date === "corrupt") throw new Error("Invalid date format");
+    return new Date(date).toLocaleDateString("fr-FR");
+  }),
+  formatStatus: jest.fn((status) => status),
+}));
+
+describe("Bills", () => {
+  let storeMock;
+  let billsInstance;
+
+  beforeEach(() => {
+    storeMock = {
+      bills: () => ({
+        list: jest.fn().mockResolvedValue([
+          { id: 1, date: "2023-12-01", status: "pending" },
+          // Déclenchera l'erreur
+          { id: 2, date: "corrupt", status: "accepted" }, 
+          { id: 3, date: "2024-02-01", status: "refused" },
+        ]),
+      }),
+    };
+
+    billsInstance = new Bills({ document: document, onNavigate: jest.fn(), store: storeMock, localStorage: window.localStorage });
+  });
+
+  test("should return bills with formatted dates, and handle corrupted data", async () => {
+    // Mock console.log pour vérifier les erreurs
+    console.log = jest.fn(); 
+
+    const bills = await billsInstance.getBills();
+    // Vérifie qu'on a bien 3 éléments
+    expect(bills).toHaveLength(3); 
+
+    // Vérifie que la première et la troisième facture ont une date formatée
+    expect(bills[0].date).toMatch(/\d{2}\/\d{2}\/\d{4}/); 
+    expect(bills[2].date).toMatch(/\d{2}\/\d{2}\/\d{4}/); 
+
+    // Vérifie que la facture corrompue garde sa date brute
+    expect(bills[1].date).toBe("corrupt");
+
+    // Vérifie que le catch a bien loggé une erreur
+    expect(console.log).toHaveBeenCalledWith(expect.any(Error), "for", expect.objectContaining({ id: 2 }));
+  });
+
+  test("should return undefined if store is not defined", async () => {
+    const billsInstance = new Bills({ document: document, onNavigate: jest.fn(), store: null, localStorage: window.localStorage });
+  
+    const result = await billsInstance.getBills();
+    // Vérifie que le retour de la fonction est undefined
+    expect(result).toBeUndefined(); 
+  });
+  
 });
